@@ -1,5 +1,6 @@
 package edu.nu.owaspapivulnlab.config;
 
+import edu.nu.owaspapivulnlab.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,14 +25,13 @@ import java.util.Collections;
 @Configuration
 public class SecurityConfig {
 
-    @Value("${app.jwt.secret}")
-    private String secret;
-
     private final RateLimitFilter rateLimitFilter;  // FIX #5: Inject rate limiter
+    private final JwtService jwtService;              // FIX #7: Inject JWT service
 
     // FIX #5: Constructor to inject dependencies
-    public SecurityConfig(RateLimitFilter rateLimitFilter) {
+    public SecurityConfig(RateLimitFilter rateLimitFilter, JwtService jwtService) {
         this.rateLimitFilter = rateLimitFilter;
+        this.jwtService = jwtService;
     }
 
     // VULNERABILITY(API7 Security Misconfiguration): overly permissive CORS/CSRF and antMatchers order
@@ -50,7 +50,7 @@ public class SecurityConfig {
 
         http.headers(h -> h.frameOptions(f -> f.disable())); // allow H2 console
 
-        http.addFilterBefore(new JwtFilter(secret), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(new JwtFilter(jwtService), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
         
         // FIX #5: Add rate limiting filter to prevent brute force and DoS attacks
         http.addFilterBefore(rateLimitFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
@@ -60,15 +60,18 @@ public class SecurityConfig {
 
     // FIX #1: Add BCrypt password encoder for secure password hashing
     // BCrypt automatically handles salting and uses adaptive hashing to prevent rainbow table attacks
+    // FIX #7: Use JwtService for token validation
     @Bean
     public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
         return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     }
 
-    // Minimal JWT filter (VULNERABILITY: weak validation - no audience, issuer checks; long TTL)
+    // FIX #7: Secure JWT filter with proper validation using JwtService
     static class JwtFilter extends OncePerRequestFilter {
-        private final String secret;
-        JwtFilter(String secret) { this.secret = secret; }
+        private final JwtService jwtService;
+        JwtFilter(JwtService jwtService) { 
+            this.jwtService = jwtService; 
+        }
 
         @Override
         protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -77,15 +80,21 @@ public class SecurityConfig {
             if (auth != null && auth.startsWith("Bearer ")) {
                 String token = auth.substring(7);
                 try {
-                    Claims c = Jwts.parserBuilder().setSigningKey(secret.getBytes()).build()
-                            .parseClaimsJws(token).getBody();
-                    String user = c.getSubject();
-                    String role = (String) c.get("role");
-                    UsernamePasswordAuthenticationToken authn = new UsernamePasswordAuthenticationToken(user, null,
-                            role != null ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)) : Collections.emptyList());
-                    SecurityContextHolder.getContext().setAuthentication(authn);
-                } catch (JwtException e) {
-                    // VULNERABILITY: swallow errors; continue as anonymous (API7)
+                    // FIX #7: Use JwtService for validation (includes issuer/audience checks)
+                    if (jwtService.validate(token)) {
+                        String user = jwtService.extractUsername(token);
+                        String role = jwtService.extractRole(token);  // FIX #7: Extract role using JwtService
+                        
+                        UsernamePasswordAuthenticationToken authn = new UsernamePasswordAuthenticationToken(
+                                user, 
+                                null,
+                                role != null ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)) : Collections.emptyList()
+                        );
+                        SecurityContextHolder.getContext().setAuthentication(authn);
+                    }
+                } catch (Exception e) {
+                    // FIX #7: Log but don't expose error details to client
+                    // Token validation failed, continue as unauthenticated
                 }
             }
             chain.doFilter(request, response);
