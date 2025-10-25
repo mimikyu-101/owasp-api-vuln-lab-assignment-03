@@ -11,14 +11,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import edu.nu.owaspapivulnlab.web.dto.UserResponse;
+import edu.nu.owaspapivulnlab.web.dto.CreateUserRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
     private final AppUserRepository users;
+    private final PasswordEncoder passwordEncoder;      // FIX #6: Inject password encoder
 
-    public UserController(AppUserRepository users) {
+    public UserController(AppUserRepository users, PasswordEncoder passwordEncoder) {
         this.users = users;
+        this.passwordEncoder = passwordEncoder;     // FIX #6: Store encoder
     }
 
     // FIX #4: Return only safe fields using UserResponse DTO to prevent data exposure
@@ -28,10 +32,22 @@ public class UserController {
         return UserResponse.from(u); // FIX #4: Excludes password, role, isAdmin fields
     }
 
-    // VULNERABILITY(API6: Mass Assignment) - binds role/isAdmin from client
+    // FIX #6: Prevent mass assignment by using whitelist DTO and setting role/isAdmin server-side
     @PostMapping
-    public AppUser create(@Valid @RequestBody AppUser body) {
-        return users.save(body);
+    public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
+        // FIX #6: Create user with only safe fields from DTO
+        AppUser newUser = AppUser.builder()
+            .username(request.getUsername())
+            .password(passwordEncoder.encode(request.getPassword())) // FIX #6: Hash password
+            .email(request.getEmail())
+            .role("USER")        // FIX #6: Always set to USER (server-side default)
+            .isAdmin(false)      // FIX #6: Always set to false (server-side default)
+            .build();
+
+        AppUser saved = users.save(newUser);
+
+        // FIX #6: Return safe DTO (no password exposed)
+        return UserResponse.from(saved);
     }
 
     // FIX #4: Return only safe fields using UserResponse DTO (excludes password, role, isAdmin)

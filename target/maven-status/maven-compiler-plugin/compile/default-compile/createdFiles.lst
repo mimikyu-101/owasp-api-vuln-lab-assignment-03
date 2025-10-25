@@ -7,6 +7,7 @@ edu\nu\owaspapivulnlab\web\AccountController.class
 edu\nu\owaspapivulnlab\web\dto\UserResponse.class
 edu\nu\owaspapivulnlab\repo\AccountRepository.class
 edu\nu\owaspapivulnlab\web\AuthController.class
+edu\nu\owaspapivulnlab\web\dto\CreateUserRequest.class
 edu\nu\owaspapivulnlab\config\SecurityConfig.class
 edu\nu\owaspapivulnlab\web\GlobalErrorHandler.class
 edu\nu\owaspapivulnlab\repo\AppUserRepository.class
