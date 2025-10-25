@@ -9,5 +9,6 @@ D:\Uni\Secure Software Design\Assignment 03\ssd_ass03\owasp-api-vuln-lab-assignm
 D:\Uni\Secure Software Design\Assignment 03\ssd_ass03\owasp-api-vuln-lab-assignment-03\owasp-api-vuln-lab\src\main\java\edu\nu\owaspapivulnlab\web\AccountController.java
 D:\Uni\Secure Software Design\Assignment 03\ssd_ass03\owasp-api-vuln-lab-assignment-03\owasp-api-vuln-lab\src\main\java\edu\nu\owaspapivulnlab\web\AdminController.java
 D:\Uni\Secure Software Design\Assignment 03\ssd_ass03\owasp-api-vuln-lab-assignment-03\owasp-api-vuln-lab\src\main\java\edu\nu\owaspapivulnlab\web\AuthController.java
+D:\Uni\Secure Software Design\Assignment 03\ssd_ass03\owasp-api-vuln-lab-assignment-03\owasp-api-vuln-lab\src\main\java\edu\nu\owaspapivulnlab\web\dto\UserResponse.java
 D:\Uni\Secure Software Design\Assignment 03\ssd_ass03\owasp-api-vuln-lab-assignment-03\owasp-api-vuln-lab\src\main\java\edu\nu\owaspapivulnlab\web\GlobalErrorHandler.java
 D:\Uni\Secure Software Design\Assignment 03\ssd_ass03\owasp-api-vuln-lab-assignment-03\owasp-api-vuln-lab\src\main\java\edu\nu\owaspapivulnlab\web\UserController.java

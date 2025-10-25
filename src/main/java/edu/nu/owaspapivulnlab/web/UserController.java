@@ -9,6 +9,8 @@ import edu.nu.owaspapivulnlab.repo.AppUserRepository;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import edu.nu.owaspapivulnlab.web.dto.UserResponse;
 
 @RestController
 @RequestMapping("/api/users")
@@ -19,10 +21,11 @@ public class UserController {
         this.users = users;
     }
 
-    // VULNERABILITY(API1: BOLA/IDOR) - no ownership check, any authenticated OR anonymous GET (due to SecurityConfig) can fetch any user
+    // FIX #4: Return only safe fields using UserResponse DTO to prevent data exposure
     @GetMapping("/{id}")
-    public AppUser get(@PathVariable Long id) {
-        return users.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    public UserResponse get(@PathVariable Long id) {
+        AppUser u = users.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        return UserResponse.from(u); // FIX #4: Excludes password, role, isAdmin fields
     }
 
     // VULNERABILITY(API6: Mass Assignment) - binds role/isAdmin from client
@@ -31,16 +34,16 @@ public class UserController {
         return users.save(body);
     }
 
-    // VULNERABILITY(API9: Improper Inventory + API8 Injection style): naive 'search' that can be abused for enumeration
+    // FIX #4: Return only safe fields using UserResponse DTO (excludes password, role, isAdmin)
     @GetMapping("/search")
-    public List<AppUser> search(@RequestParam String q) {
-        return users.search(q);
+    public List<UserResponse> search(@RequestParam String q) {
+        return users.search(q).stream().map(UserResponse::from).collect(Collectors.toList());
     }
 
-    // VULNERABILITY(API3: Excessive Data Exposure) - returns all users including sensitive fields
+    // FIX #4: Prevent excessive data exposure by returning only safe user fields via DTO
     @GetMapping
-    public List<AppUser> list() {
-        return users.findAll();
+    public List<UserResponse> list() {
+        return users.findAll().stream().map(UserResponse::from).collect(Collectors.toList());
     }
 
     // VULNERABILITY(API5: Broken Function Level Authorization) - allows regular users to delete anyone

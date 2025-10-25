@@ -4,6 +4,7 @@ edu\nu\owaspapivulnlab\model\AppUser.class
 edu\nu\owaspapivulnlab\web\UserController.class
 edu\nu\owaspapivulnlab\service\JwtService.class
 edu\nu\owaspapivulnlab\web\AccountController.class
+edu\nu\owaspapivulnlab\web\dto\UserResponse.class
 edu\nu\owaspapivulnlab\repo\AccountRepository.class
 edu\nu\owaspapivulnlab\web\AuthController.class
 edu\nu\owaspapivulnlab\config\SecurityConfig.class
