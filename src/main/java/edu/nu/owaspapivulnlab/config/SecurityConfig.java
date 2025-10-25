@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.filter.OncePerRequestFilter;
 import io.jsonwebtoken.*;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -25,6 +26,13 @@ public class SecurityConfig {
 
     @Value("${app.jwt.secret}")
     private String secret;
+
+    private final RateLimitFilter rateLimitFilter;  // FIX #5: Inject rate limiter
+
+    // FIX #5: Constructor to inject dependencies
+    public SecurityConfig(RateLimitFilter rateLimitFilter) {
+        this.rateLimitFilter = rateLimitFilter;
+    }
 
     // VULNERABILITY(API7 Security Misconfiguration): overly permissive CORS/CSRF and antMatchers order
     @Bean
@@ -43,6 +51,10 @@ public class SecurityConfig {
         http.headers(h -> h.frameOptions(f -> f.disable())); // allow H2 console
 
         http.addFilterBefore(new JwtFilter(secret), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+        
+        // FIX #5: Add rate limiting filter to prevent brute force and DoS attacks
+        http.addFilterBefore(rateLimitFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
