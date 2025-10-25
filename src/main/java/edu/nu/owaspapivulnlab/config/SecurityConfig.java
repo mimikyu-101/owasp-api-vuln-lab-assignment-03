@@ -46,6 +46,13 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // FIX #1: Add BCrypt password encoder for secure password hashing
+    // BCrypt automatically handles salting and uses adaptive hashing to prevent rainbow table attacks
+    @Bean
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    }
+
     // Minimal JWT filter (VULNERABILITY: weak validation - no audience, issuer checks; long TTL)
     static class JwtFilter extends OncePerRequestFilter {
         private final String secret;

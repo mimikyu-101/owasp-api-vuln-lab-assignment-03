@@ -15,10 +15,12 @@ import java.util.Map;
 public class AuthController {
     private final AppUserRepository users;
     private final JwtService jwt;
-
-    public AuthController(AppUserRepository users, JwtService jwt) {
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    
+    public AuthController(AppUserRepository users, JwtService jwt, org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.users = users;
         this.jwt = jwt;
+        this.passwordEncoder = passwordEncoder;     // FIX #1: Inject password encoder
     }
 
     public static class LoginReq {
@@ -57,8 +59,9 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginReq req) {
         // VULNERABILITY(API2: Broken Authentication): plaintext password check, no lockout/rate limit/MFA
+        // FIX #1: Use password encoder (BCrypt) to securelys verify hashed passwords
         AppUser user = users.findByUsername(req.username()).orElse(null);
-        if (user != null && user.getPassword().equals(req.password())) {
+        if (user != null && passwordEncoder.matches(req.password(), user.getPassword())) {
             Map<String, Object> claims = new HashMap<>();
             claims.put("role", user.getRole());
             claims.put("isAdmin", user.isAdmin()); // VULN: trusts client-side role later
