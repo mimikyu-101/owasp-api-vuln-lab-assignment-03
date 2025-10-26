@@ -69,4 +69,43 @@ class AdditionalSecurityExpectationsTests {
         mvc.perform(get("/api/accounts/2/balance").header("Authorization","Bearer "+alice))
                 .andExpect(status().isForbidden()); // Fails now
     }
+
+    @Test
+    void transfer_rejects_negative_amount() throws Exception {
+        String token = login("alice", "alice123");
+        mvc.perform(post("/api/accounts/1/transfer?amount=-100")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_amount"))
+            .andExpect(jsonPath("$.message", containsString("positive and less than or equal to 1,000,000")));
+    }
+
+    @Test
+    void transfer_rejects_zero_amount() throws Exception {
+        String token = login("alice", "alice123");
+        mvc.perform(post("/api/accounts/1/transfer?amount=0")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_amount"));
+    }
+
+    @Test
+    void transfer_rejects_excessively_large_amount() throws Exception {
+        String token = login("alice", "alice123");
+        mvc.perform(post("/api/accounts/1/transfer?amount=1000001")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_amount"));
+    }
+
+    @Test
+    void error_response_is_sanitized() throws Exception {
+        String token = login("alice", "alice123");
+        // Trigger an internal error by requesting a non-existent account
+        mvc.perform(post("/api/accounts/9999/transfer?amount=100")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isInternalServerError())
+            .andExpect(jsonPath("$.error").value("internal_error"))
+            .andExpect(jsonPath("$.message", containsString("contact support")));
+    }
 }
