@@ -61,6 +61,14 @@ public class AccountController {
             return ResponseEntity.status(403).body(error);
         }
 
+        // FIX #9: Validate transfer amount
+        if (amount == null || amount <= 0 || amount > 1_000_000) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "invalid_amount");
+            error.put("message", "Transfer amount must be positive and less than or equal to 1,000,000.");
+            return ResponseEntity.badRequest().body(error);
+        }
+
         // Perform the transfer
         a.setBalance(a.getBalance() - amount);
         accounts.save(a);
